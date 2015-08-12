@@ -1,0 +1,275 @@
+fileFormatVersion: 2
+guid: 2c6516cb97c1c584d98a3e95374b8df7
+timeCreated: 1438385796
+licenseType: Free
+TextureImporter:
+  fileIDToRecycleName:
+    21300000: Guns_0
+    21300002: Guns_1
+    21300004: Guns_2
+    21300006: Guns_3
+    21300008: Guns_4
+    21300010: Guns_5
+    21300012: Guns_6
+    21300014: Guns_7
+    21300016: Guns_8
+    21300018: Guns_9
+    21300020: Guns_10
+    21300022: Guns_11
+    21300024: Guns_12
+    21300026: Guns_13
+    21300028: Guns_14
+    21300030: Guns_15
+    21300032: Guns_16
+    21300034: Guns_17
+    21300036: Guns_18
+    21300038: Guns_19
+  serializedVersion: 2
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 1
+    linearTexture: 0
+    correctGamma: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: .25
+    normalMapFilter: 0
+  isReadable: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 0
+  cubemapConvolution: 0
+  cubemapConvolutionSteps: 8
+  cubemapConvolutionExponent: 1.5
+  seamlessCubemap: 0
+  textureFormat: -1
+  maxTextureSize: 2048
+  textureSettings:
+    filterMode: -1
+    aniso: 16
+    mipBias: -1
+    wrapMode: 1
+  nPOTScale: 0
+  lightmap: 0
+  rGBM: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: .5, y: .5}
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spritePixelsToUnits: 100
+  alphaIsTransparency: 1
+  textureType: 8
+  buildTargetSettings: []
+  spriteSheet:
+    sprites:
+    - name: Guns_0
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 723
+        width: 74
+        height: 40
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Guns_1
+      rect:
+        serializedVersion: 2
+        x: 350
+        y: 721
+        width: 108
+        height: 46
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Guns_2
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 662
+        width: 74
+        height: 41
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Guns_3
+      rect:
+        serializedVersion: 2
+        x: 125
+        y: 653
+        width: 78
+        height: 51
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Guns_4
+      rect:
+        serializedVersion: 2
+        x: 350
+        y: 655
+        width: 124
+        height: 46
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Guns_5
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 595
+        width: 58
+        height: 35
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Guns_6
+      rect:
+        serializedVersion: 2
+        x: 350
+        y: 581
+        width: 108
+        height: 61
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Guns_7
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 542
+        width: 73
+        height: 37
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Guns_8
+      rect:
+        serializedVersion: 2
+        x: 116
+        y: 534
+        width: 88
+        height: 61
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Guns_9
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 465
+        width: 91
+        height: 36
+      alignment: 9
+      pivot: {x: .0524880961, y: .955717325}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Guns_10
+      rect:
+        serializedVersion: 2
+        x: 138
+        y: 464
+        width: 62
+        height: 38
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Guns_11
+      rect:
+        serializedVersion: 2
+        x: 266
+        y: 469
+        width: 206
+        height: 62
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Guns_12
+      rect:
+        serializedVersion: 2
+        x: 15
+        y: 387
+        width: 115
+        height: 67
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Guns_13
+      rect:
+        serializedVersion: 2
+        x: 253
+        y: 375
+        width: 201
+        height: 71
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Guns_14
+      rect:
+        serializedVersion: 2
+        x: 266
+        y: 296
+        width: 229
+        height: 51
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Guns_15
+      rect:
+        serializedVersion: 2
+        x: 266
+        y: 216
+        width: 245
+        height: 53
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Guns_16
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 115
+        width: 260
+        height: 81
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Guns_17
+      rect:
+        serializedVersion: 2
+        x: 266
+        y: 114
+        width: 258
+        height: 73
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Guns_18
+      rect:
+        serializedVersion: 2
+        x: 35
+        y: 0
+        width: 197
+        height: 63
+      alignment: 9
+      pivot: {x: .352457583, y: .9138695}
+      border: {x: 0, y: 0, z: 0, w: 0}
+    - name: Guns_19
+      rect:
+        serializedVersion: 2
+        x: 266
+        y: 4
+        width: 161
+        height: 71
+      alignment: 0
+      pivot: {x: .5, y: .5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+  spritePackingTag: 
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
