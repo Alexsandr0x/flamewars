@@ -1,0 +1,461 @@
+Flamewars
+=========
+
+Sumário
+-------
+
+<!-- MarkdownTOC -->
+
+- [Introdução](#introdução)
+- [Recursos Utilizados](#recursos-utilizados)
+  - [Sprites and Bones](#sprites-and-bones)
+    - [Conceitos](#conceitos)
+  - [UNET](#unet)
+    - [Conceitos](#conceitos-1)
+- [Cenas (Scenes)](#cenas-scenes)
+  - [Lobby](#lobby)
+  - [Level](#level)
+- [Scripts](#scripts)
+  - [Networking](#networking)
+    - [LobbyManager](#lobbymanager)
+    - [LobbyPlayer](#lobbyplayer)
+    - [SyncPosition](#syncposition)
+    - [SyncRotation](#syncrotation)
+    - [SyncVelocity](#syncvelocity)
+  - [Player](#player)
+    - [Player (script)](#player-script)
+    - [PlayerAnimator](#playeranimator)
+    - [PlayerCamera](#playercamera)
+    - [PlayerChat](#playerchat)
+    - [PlayerCreateGun](#playercreategun)
+    - [PlayerFace](#playerface)
+    - [PlayerFlip](#playerflip)
+    - [PlayerGroundSensor](#playergroundsensor)
+    - [PlayerGunAimAtMouse](#playergunaimatmouse)
+    - [PlayerGunShoot](#playergunshoot)
+    - [PlayerHandleUI](#playerhandleui)
+    - [PlayerHealth](#playerhealth)
+    - [PlayerInput](#playerinput)
+    - [PlayerNameLabel](#playernamelabel)
+    - [PlayerSyncMouse](#playersyncmouse)
+  - [Gun](#gun)
+    - [AimRenderer](#aimrenderer)
+    - [GunKnockBack](#gunknockback)
+    - [GunScript](#gunscript)
+    - [SoundOnShoot & ThrowCapsule](#soundonshoot--throwcapsule)
+
+<!-- /MarkdownTOC -->
+
+
+Introdução
+----------
+
+Essa documentação foi criada com o intuito de descrever os principais scripts e ideias implementadas no projeto, tendo como objetivo secundário um documento para os próprios desenvolvedores do projeto (e para quem queira ler) de como a mais nova API de network do Unity 5 (UNET) funciona, assim como suas peculiaridades e bugs encontrados.
+
+Recursos Utilizados
+-------------------
+
+Antes do desenvolvimento em si, pensamos em listas as funcionalidades básicas que o jogo teria e quais delas deveriam ser executadas por *assets* de terceiros, para fins de simplificação.
+
+### Sprites and Bones
+
+Sprites and Bones é um conjunto de assets open source com a finalidade de facilitar as animações baseadas em esqueleto, de forma a simplificar um movimento mais fluido sem ter um conhecimento avançado de animação. Ele se baseia em criar dependências entre transforms, fazendo com que o movimento de um respeite de um outro atrelado (detalhes ao decorrer do documento).
+
+![Esqueleto](imgs/player-prefab.png)
+
+#### Conceitos
+
+* **Skeleton**
+
+    Objeto que contém objetos do tipo Bone (ossos) e gerencia a atualização dos mesmos.
+
+* **Bone**
+
+    Objetos do tipo Bone compõem a estrutura o do Skeleton, um Bone pode ter 1 ou mais filhos(formando articulações).
+
+* **Helper**
+
+    São objetos auxiliares que servem de referência para atualização da posição dos Bones, usando um algorítmo de *Inverse Kinematics*.
+
+    Na imagem acima, os Helpers aparecem como quadradinhos verdes.
+
+* **Inverse Kinematics (IK)**
+
+    Componente que pode ser adicionado aos Bones para deixá-los dinâmicos, um Bone com este componente irá se orientar pelo Helper atrelado ao script.
+
+### UNET
+
+A mais nova API de network do Unity traz novas funcionalidades e diversas ferramentas para sincronia e relação cliente servidor, na qual facilitou em alguns aspectos e dificultou em outros (detalhes ao decorrer do documento).
+
+#### Conceitos
+
+* **NetworkManager e LobbyManager**
+
+    Objetos indispensáveis para o funcionamento do Networking, esse objeto deve ser único e irá "segurar" a conexão com o servidor ou com os clientes. A diferença entre os dois é que o LobbyManager permite a montagem de um lobby (local onde aparecerão os jogadores e seus dados).
+
+* **LobbyPlayer**
+
+    Objeto que representa um jogador dentro do lobby, esse objeto pode sincronizar informações do player (como nick, time, etc.).
+
+* **Network Identity**
+
+    Todo objeto que deve ser sincronizado em algum aspecto deve ter esse componente.
+
+* **Network Transform**
+
+    Componente que facilita a sincronização e interpolação da posição, rotação e escala de um objeto.
+
+Cenas (Scenes)
+--------------
+
+O jogo se baseia em apenas duas cenas, a de Lobby (que contém uma implementação do NetworkLobbyManager e a interface de usuário para inserir seus dados) e a Level (que é a cena onde a partida ocorre).
+
+### Lobby
+
+![Lobby](imgs/lobby.png)
+
+O Lobby contém um único GameObject principal (o LobbyManager), além da Camera e do Event System do Canvas.
+
+Dentro do Lobby Manager, existem vários GameObjects De interface gráfica dentro do lobby, que conforme os botões para avançar são ativados eles vão sendo habilitados ou desabilitados, dentro do LobbyManager ainda existe um comando que Cria um LobbyPlayer quando o usuário entra ou cria um host. Esse LobbyPlayer tem um GameObject filho que renderiza o nickname, status e time do jogador e já sincroniza com os demais clientes.
+
+### Level
+
+![Gameplay](imgs/gameplay.png)
+
+O Level é a cena do Game em sí, contendo um GameObject que tem como herdeiros todos os elementos de mapa, tambem há um canvas para interface grafica que contem interfaces para verificar pontuação (_kill/death ratio_) e para sair do jogo. Tambem há ele sempre ativo um chat que sincroniza mensagens de todos os jogadores.
+
+Scripts
+-------
+
+
+Nessa parte da documentação, será explicado o papel dos scripts usados, inicialmente com foco as soluções relacionadas a networking e explicando alguns aspectos principais do UNET, e posteriormente sera abordado os scripts que trabalham com a jogabilidade em si.
+
+os algoritmos de utilidades e UI serão muito brevemente citados, sera dado mais enfase aos algoritmos com relação as principais dificuldades no desenvolvimento que são os que abordam sincronização e elementos de shooting game.
+
+os sub tópicos serão organizados em relação a como os scripts estão guardados nas pastas do projeto, não havendo necessidade de uma cópia do código aqui, apenas quando houver a necessidade de explicar linhas especificas.
+
+
+### Networking
+
+Nessa sessão serão explicados brevemente o papel dos algoritmos voltados a network em Flamewars, acompanhados com o link da documentação oficial do Unity.
+
+#### LobbyManager
+
+extende de: [UnityEngine.Networking.NetworkLobbyManager](http://docs.unity3d.com/Manual/class-NetworkLobbyManager.html)
+
+Esse Script tem como papel lidar com todo o controle de server, semelhante ao _NetworkManager_, porem com um suporte para lobbys, que permitem dentre varias coisas controlar numero limite de conexões, comandos de "ready" para definir quando cada cliente estiver pronto e previne que jogadores entrem no servidor quando a partida estiver em andamento.
+
+No caso dessa extensão da classe, tratamos alguns dados especificos de entrada do jogo, que são controlados no evento _OnLobbyServerSceneLoadedForPlayer_, como o time de cada jogador a referencia de seus players com seus lobby player (sera explicado posteriormente o que são lobbyplayers e sua importância).
+
+```C#
+    public override bool OnLobbyServerSceneLoadedForPlayer(GameObject lobbyPlayer, GameObject gamePlayer) {
+
+        Application.runInBackground = true;
+
+        LobbyPlayer sLobbyPlayer = lobbyPlayer.GetComponent<LobbyPlayer>();
+
+        Player sPlayer = gamePlayer.GetComponent<Player>();
+
+        GameObject[] spawnPoints = GameObject.FindGameObjectsWithTag("SpawnPoint " + sLobbyPlayer.team.name);
+
+        int rnd = Random.Range(0, spawnPoints.Length);
+        sPlayer.transform.position = spawnPoints[rnd].transform.position;
+        sPlayer.lobbyPlayerId = sLobbyPlayer.netId.Value;
+        
+        return true;
+    }
+```
+
+nessa parte do código, nota-se a o player recebe referencia de seu Lobby Player, tambem, dentro do lobbyPlayer existem variaveis que guardam os dados da interface grafica e entregam para o player, de inicio o nome do time é usado para spawna-lo no spawn point referente ao seu time.
+
+#### LobbyPlayer
+
+extende de: [UnityEngine.Networking.NetworkLobbyPlayer](http://docs.unity3d.com/Manual/class-NetworkLobbyPlayer.html)
+
+O _NetworkLobbyPlayer_ é encarregado de guardar os dados em lobby, onde cada cliente conectado tem seu respectivo lobbyPlayer. Ele é encarregado de definir se o jogador esta ou não pronto para iniciar a partida.
+
+Em nossa extensão alguns dados são guardados para serem usados na cena de jogo, como o apelido (nickname) e ID do time.
+Esse Script é atrelado a um Prefab que tem como filhos intefaces graficas, usadas no lobby e na cena de jogo em sí, alternando a ativação dessas através de enventos como o _OnClientEnterLobby_.
+
+#### SyncPosition
+
+
+Script, junto aos próximos citados, usado para sincronizar atraves de variaveis sincronizadas (_SyncVar_) aspectos de algum _GameObject_. Nesse Caso, esse Script recebe um Transform e sincroniza sua posição caso não seja local, e transmite através de um comando quando é local.
+
+Nesse código é usado os principais aspectos de sincronia como _Command_,_Client_ e _Syncvar_, para suavizar o movimento dos jogadores sincronizados é usado o metódo _Lerp_.
+
+```C#
+    class SyncPosition : NetworkBehaviour {
+        [SerializeField]
+        Transform _transform;
+
+        [SerializeField]
+        float lerpRate = 15f;
+
+        [SyncVar]
+        Vector3 syncPosition;
+
+        private bool isLocal;
+
+        void Start() {
+            isLocal = NetworkUtils.RatinhosTest(gameObject);
+        }
+
+        void FixedUpdate() {
+            LerpPosition();
+            TransmitPosition();
+        }
+
+        void LerpPosition() {
+            if (!isLocal) {
+                _transform.position = Vector3.Lerp(_transform.position, syncPosition, Time.deltaTime * lerpRate);
+            }
+        }
+
+        [Command]
+        void CmdProvidePositionToServer(Vector3 value) {
+            syncPosition = value;
+        }
+
+        [Client]
+        void TransmitPosition() {
+            if (isLocal) {
+                CmdProvidePositionToServer(_transform.position);
+            }
+        }
+    }
+```
+
+#### SyncRotation
+
+Script que tem o mesmo papel que o anterior, porem voltado a sincronia da rotação porem com a mesma base.
+
+#### SyncVelocity
+
+Inicialmente usado nas plataformas movéis mas inutilizado por problemas de sincronia, visaria fazer o mesmo, porem sincronizando a velocidade para que não seja perdido efeitos de colisão.
+
+### Player
+
+Aqui focaremos nos scripts que trabalham toda a mecanica do jogador, é importante lembrar que, por uma peculiaridade da API de network, o único gameObject que podera mandar comandos para o servidor é o player, logo, diversos metódos foram feitos pensando em deixar o serviço para o player informar o que ocorre ao seu redor, como será explicado posteriormente
+
+#### Player (script)
+
+Essse é o script principal do Player, onde estão as principais variaveis que serão tratadas durante o jogo. Aqui temos variaveis sincronas de Kills e Deaths, assim como o comando que é invocada quando o Player confirma sua morte (essa confirmação acontece no cliente que envia para o servidor, apesar de não ser o melhor meio de verificação foi o melhor de se trabalhar, ja que de quaçquer outro jeito teriamos problemas com projeteis invisiveis para o cliente matando-o tornando injusto). Tambem temos a referencia ao ID do LobbyPlayer (que é atribuido no Evento do _LobbyManager_ citado acima) e com esse dado ele busca seu LobbyPlayer.
+
+Quando iniciado, esse Script tambem faz outros tratamentos, como colocar todos os lobbyPlayers da cena como filhos de uma elemento de canvas e ativando seu gameObject que apresenta sua pontuação (que pode ser visto segurando TAB).
+
+#### PlayerAnimator
+
+Trabalha com os aspectos de animação do Player.
+
+#### PlayerCamera
+
+Simples Script feito para colocar como foco da camera o player que é local (onde `isLocalPlayer == true`).
+
+#### PlayerChat
+
+Esse script cuida da parte do chat, podendo enviar e receber mensagens. As mensagens são sincronizadas usando _Command_ e _ClientRpc_ . O resto do script é convencional, cuidando da parte gráfica, foco, etc.
+
+```C#
+    void SendMessage(string message) {
+        message = "<color=" + GetComponent<Player>().lobbyPlayer.team.name + ">" + GetComponent<Player>().lobbyPlayer.nickname + ": </color>" + message;
+        CmdSendMessage(message);
+        if (isServer) {
+            chatText.text += "\n" + message;
+        }
+    }
+
+    [Command]
+    void CmdSendMessage(string message) {
+        RpcReceiveMessage(message);
+    }
+
+    [ClientRpc]
+    void RpcReceiveMessage(string message) {
+        chatText.text += "\n" + message;
+    }
+```
+
+#### PlayerCreateGun
+
+Esse algoritmo funciona como um pivo entre a arma e o player, de forma a cria-la para que fique natural no player, apontando os locais onde a arma deve ser colocada e o tamanho do osso auxiliar no corpo do player.
+
+```C#
+	gun.transform.parent = gunBone.transform;
+	gun.transform.localPosition = pivot.localPosition;
+	gun.transform.localRotation = Quaternion.EulerAngles(0, 0, Mathf.PI * 0.5f);
+
+	gunBone.GetComponent<Bone>().length = Vector3.Distance(pivot.position, muzzle.position);
+
+	leftHand.GetComponent<StickyPosition>().target = leftGrip;
+	rightHand.GetComponent<StickyPosition>().target = rightGrip;
+
+	GetComponent<Player>().gun = gun;
+```
+
+Nessa parte do algoritmo, a arma (que é um GameObject) é atrelada a um osso auxiliar no corpo do player (como uma terceira mão invisivel) e sua parte final se torna a distancia entre o pivot e o bico da arma (ln. 5) por fim as mãos são apontadas para os grips da arma (locais onde devem ser segurados).
+
+#### PlayerFace
+
+Script voltado para mudar a face do player quando as condições são aplicadas, aqui é guardado um tipo _Face_ que contem uma lista de Faces com um delegate que verifica se o player esta em condições de receber Face especifica e substitui em relação a sua prioridade.
+
+Para melhor entendimento veja a seguir:
+
+segue como esta na Classe Face.cs:
+```C#
+    public static readonly Face[] list = new Face[]{ 
+           new Face("Focused", (x) => {
+                return true;
+           }, -1),
+           new Face("Rage", (x) => {
+               return x.GetComponent<Player.PlayerHealth>().health <= 40;
+           }, 100),
+           new Face("Super rage", (x) => {
+               return x.GetComponent<Player.PlayerHealth>().health <= 15;
+           }, 200),
+           new Face("Trollface", (x) => {
+               var player = x.GetComponent<Player.Player>();
+               return player.kills - player.deaths >= 3;
+           }, 10),
+           new Face("Fuck yea", (x) => {
+               var player = x.GetComponent<Player.Player>();
+               return player.kills - player.deaths >= 5;
+           }, 20),
+           new Face("Vish", (x) => {
+               var player = x.GetComponent<Player.Player>();
+               return player.deaths - player.kills >= 3;
+           }, 10),
+           new Face("NO.", (x) => {
+               var player = x.GetComponent<Player.Player>();
+               return player.deaths - player.kills >= 5;
+           }, 20),
+           new Face("Okay", (x) => {
+               var player = x.GetComponent<Player.Player>();
+               return player.deaths - player.kills >= 8;
+           }, 30)
+         };
+```
+
+e em PlayerFace.cs:
+
+```C#
+    void FixedUpdate() {
+        if (isLocalPlayer) {
+            float health = playerHealth.health;
+
+            Face face = Face.defaultFace;
+            foreach (var faceCandidate in Face.list) {
+                if (faceCandidate.verify(gameObject) && faceCandidate.priority > face.priority) {
+                    face = faceCandidate;
+                }
+            }
+            if (faceName != face.spriteName) {
+                CmdSetFace(face.spriteName);
+            }
+        }
+    }
+```
+
+#### PlayerFlip
+
+Script voltado para modificar a orientação do player em relação a posição do mouse.
+
+#### PlayerGroundSensor
+
+Script voltado a verificar se há chão abaixo do player permitindo o pulo ou não usando _Raycasting_.
+```C#
+        raycastHit = Physics2D.Raycast(foot.position, Vector2.down, 10f);
+        if (raycastHit.collider) {
+            distance = raycastHit.distance;
+        } else {
+            distance = float.MaxValue;
+        }
+```
+O `Vector2.down` indica que o raycast apontará para baixo, e o parametro seguinte(`10f`) é a distância que será checada, note que essa distância deve ser pequena para não causar grandes impactos na performance.
+
+#### PlayerGunAimAtMouse
+
+Um simples script que atualiza o _Helper_ da arma para ficar na posição do mouse ou em pelo menos no mesmo ângulo (há a possibilidade de restringir o _Helper_ em um raio, por motivos estéticos).
+
+#### PlayerGunShoot
+
+Script que cria uma chamada em todos os clientes (_ClientRpc_) para que ocorra o tiro em si.
+
+#### PlayerHandleUI
+
+Script que trabalha com a barra de vida do player, tornando 100% do seu tamanho relacionado a vida do player e indo diminundi gradativamente.
+
+#### PlayerHealth
+
+Script que lida com a vida do player, definindo a vida inicial e sempre recebebdno quando o player toma dano. Tambem é verificado sua morte e trabalha com o respawn do mesmo após a morte.
+
+Nesse código vemos que quando a vida zera adicionamos a pontuação o atirador, aplicamos o método de morte (que chama um invoke de 5 segundos) e enquanto o player do cliente não da respawn a camera se volta para o atirador que efetuou o tiro que resultou na morte, como uma _Kill Cam_.
+
+```C#
+	public void ReceiveDamage(Player shooter, float value) {
+	    if (isLocalPlayer) {
+	        health -= value;
+	        CmdSetHealth(health);
+	        if (health <= 0) {
+	            GetComponent<Player>().AddDeath(shooter.netId);
+	            Die();
+	            Camera.main.GetComponent<CameraScript>().target = shooter.transform;
+	        }
+	    }
+	}
+```
+
+#### PlayerInput
+
+Trabalha com toda a entrada do Cliente relacionada a movimentação e ação do player, como se mover e pular, tambem aqui é verificado se o player pode dar um segundo pulo. tambem é controlado o botão de Chat (para escrever nele).
+
+#### PlayerNameLabel
+
+Script que tem como papel popular o _TextMesh_ do Player, colocando seu nickname e a cor de seu time.
+
+#### PlayerSyncMouse
+
+Script que poderia estar muito bem na parte de networking, mas já que influencia diretamente na jogabilidade do player foi guardade do diretorio de scripts do player. Nele é simcronizado o _Vector3_ do mouse para mira e angulação do tiro.
+
+
+### Gun
+
+Abaixo Segue uma breve explicação dos scripts atrelados a arma.
+
+#### AimRenderer
+
+Script voltado para criar uma mira que segue a posição do mouse, sendo facilmente mutavel em relação a corpo, estilo, raio e quantidade de arestas.
+
+#### GunKnockBack
+
+Encarregado de, quando ocorre o tiro, aplicar um "erro" na rotação da arma, assim como a sua graduada volta a ponto inicial, que simula o recuo da arma.
+
+#### GunScript
+
+Principal Script da arma, é encarregado de invocar a bala quando o tiro ocorre, assim como controlar a cadnecia de tiro e a precisão. 
+
+O método encarregado de aplicar o tiro, e que é chamado pelo _ClientRPC_ do player que atirou é esse:
+
+```C#
+    public void Shoot(Vector3 muzzlePosition, float angle, Vector2 playerVelocity) {
+        if (fireTimer > 0)
+            return;
+
+        fireTimer = 1/fireRate;
+
+        SendMessageUpwards("OnShoot", owner);
+
+        GameObject newBullet = (GameObject)Instantiate(bulletPrefab, muzzlePosition, Quaternion.AngleAxis(angle * Mathf.Rad2Deg, new Vector3(0, 0, 1)));
+
+        newBullet.GetComponent<BulletScript>().owner = owner;
+
+        Rigidbody2D bulletRigidBody = newBullet.GetComponent<Rigidbody2D>();
+
+        bulletRigidBody.velocity = playerVelocity + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * bulletSpeed;
+    }
+```
+nele, é verificado se o tempo para a tirar ja passou (que respeita o _firerate_), chama o envento `OnShoot`(encarregado tanto do som do tiro quanto da saida da capsula da bala) e invoca a bala com angulo e velocidade baseada na situação do player.
+
+#### SoundOnShoot & ThrowCapsule
+
+Scripts que tem como metodo o `OnShoot()` que cada um faz seu respectivamente ativar o som de tiro da arma e jogar uma capsula com vetor de velocidade inicial no chão.
